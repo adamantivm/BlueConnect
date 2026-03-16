@@ -45,14 +45,14 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
     ),
     "salt": SensorEntityDescription(
         key="salt",
-        name="Salt",
+        name="Salinity",
         native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:shaker-outline",
     ),
     "ORP": SensorEntityDescription(
         key="ORP",
-        name="Oxidation-Reduction Potential",
+        name="Sanitation (ORP)",
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
