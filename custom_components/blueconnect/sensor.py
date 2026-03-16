@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
+    EntityCategory,
     UnitOfConductivity,
     UnitOfElectricPotential,
     UnitOfTemperature,
@@ -74,15 +75,17 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=PERCENTAGE,
         icon="mdi:battery",
         suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "battery_voltage": SensorEntityDescription(
         key="battery_voltage",
         name="Battery Voltage",
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.BATTERY,
+        device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         icon="mdi:battery",
         suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "temperature": SensorEntityDescription(
         key="temperature",
