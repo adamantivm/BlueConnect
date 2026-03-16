@@ -74,7 +74,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
         icon="mdi:battery",
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "battery_voltage": SensorEntityDescription(
@@ -82,9 +82,9 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         name="Battery Voltage",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
-        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         icon="mdi:battery",
-        suggested_display_precision=0,
+        suggested_display_precision=2,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "temperature": SensorEntityDescription(
