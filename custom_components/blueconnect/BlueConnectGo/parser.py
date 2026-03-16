@@ -105,8 +105,8 @@ class BlueConnectGoBluetoothDeviceData:
             device.sensors["EC"] = None
             device.sensors["salt"] = None
 
-        raw_batt = int.from_bytes(data[9:11], byteorder="little")
-        device.sensors["battery_voltage"] = raw_batt
+        raw_batt = int.from_bytes(data[9:11], byteorder="little")  # raw value in mV
+        device.sensors["battery_voltage"] = raw_batt / 1000.0
         BATT_MAX_MV = 3640
         BATT_MIN_MV = 3400
         batt_percent = (raw_batt - BATT_MIN_MV) / (BATT_MAX_MV - BATT_MIN_MV) * 100.0
