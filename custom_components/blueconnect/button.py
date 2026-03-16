@@ -73,7 +73,7 @@ class TakeMeasurementImmediately(
                 )
             },
             name=device_name,
-            manufacturer="Blue Riiot",
+            manufacturer="Blueriiot",
             model=model,
             hw_version=blueconnect_go_device.hw_version,
             sw_version=blueconnect_go_device.sw_version,
