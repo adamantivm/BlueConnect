@@ -17,6 +17,32 @@
                     "address": "Device"
                 },
                 "description": "Choose a device to set up"
+            },
+            "device_type": {
+                "title": "Select Device Type",
+                "description": "Select whether your device is a Blue Connect Go or Blue Connect Plus. Only the Plus model has salinity and conductivity sensors.",
+                "data": {
+                    "device_type": "Device Type"
+                }
+            },
+            "device_name": {
+                "title": "Name Your Device",
+                "description": "Enter a name for this device.",
+                "data": {
+                    "device_name": "Device Name"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configure BlueConnect Device",
+                "description": "Update device type and name. Changes will take effect after reloading the integration.",
+                "data": {
+                    "device_type": "Device Type",
+                    "device_name": "Device Name"
+                }
             }
         }
     }

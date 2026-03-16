@@ -14,12 +14,18 @@ from homeassistant.components.bluetooth import (
     BluetoothServiceInfo,
     async_discovered_service_info,
 )
-from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.data_entry_flow import FlowResult
 
 from .BlueConnectGo import BlueConnectGoBluetoothDeviceData, BlueConnectGoDevice
-from .const import DOMAIN
+from .const import (
+    CONF_DEVICE_NAME,
+    CONF_DEVICE_TYPE,
+    DEVICE_TYPE_GO,
+    DEVICE_TYPE_PLUS,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +58,13 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._discovered_device: Discovery | None = None
         self._discovered_devices: dict[str, Discovery] = {}
+        self._device_type: str | None = None
+        self._device_name: str | None = None
+
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return BCGoOptionsFlow(config_entry)
 
     async def _get_device_data(
         self, discovery_info: BluetoothServiceInfo
@@ -115,14 +128,61 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Confirm discovery."""
         if user_input is not None:
-            return self.async_create_entry(
-                title=self.context["title_placeholders"]["name"], data={}
-            )
+            return await self.async_step_device_type()
 
         self._set_confirm_only()
         return self.async_show_form(
             step_id="bluetooth_confirm",
             description_placeholders=self.context["title_placeholders"],
+        )
+
+    async def async_step_device_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle device type selection."""
+        if user_input is not None:
+            self._device_type = user_input[CONF_DEVICE_TYPE]
+            return await self.async_step_device_name()
+
+        return self.async_show_form(
+            step_id="device_type",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_GO): vol.In(
+                        {
+                            DEVICE_TYPE_GO: "Blue Connect Go",
+                            DEVICE_TYPE_PLUS: "Blue Connect Plus",
+                        }
+                    ),
+                }
+            ),
+            description_placeholders=self.context.get("title_placeholders", {}),
+        )
+
+    async def async_step_device_name(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle device naming."""
+        if user_input is not None:
+            self._device_name = user_input[CONF_DEVICE_NAME]
+            return self.async_create_entry(
+                title=self._device_name,
+                data={
+                    CONF_DEVICE_TYPE: self._device_type,
+                    CONF_DEVICE_NAME: self._device_name,
+                },
+            )
+
+        # Get default name from discovered device
+        default_name = self.context.get("title_placeholders", {}).get("name", "")
+
+        return self.async_show_form(
+            step_id="device_name",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_NAME, default=default_name): str,
+                }
+            ),
         )
 
     async def async_step_user(
@@ -141,7 +201,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
 
             self._discovered_device = discovery
 
-            return self.async_create_entry(title=discovery.name, data={})
+            return await self.async_step_device_type()
 
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass):
@@ -191,5 +251,56 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_ADDRESS): vol.In(titles),
                 },
+            ),
+        )
+
+
+class BCGoOptionsFlow(OptionsFlow):
+    """Handle options flow for BlueConnect integration."""
+
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            # Update config entry data with new values
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data={
+                    **self.config_entry.data,
+                    CONF_DEVICE_TYPE: user_input[CONF_DEVICE_TYPE],
+                    CONF_DEVICE_NAME: user_input[CONF_DEVICE_NAME],
+                },
+            )
+            # Trigger reload to apply changes
+            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            return self.async_create_entry(title="", data={})
+
+        # Get current values or defaults
+        current_device_type = self.config_entry.data.get(
+            CONF_DEVICE_TYPE, DEVICE_TYPE_GO
+        )
+        current_device_name = self.config_entry.data.get(
+            CONF_DEVICE_NAME, self.config_entry.title
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_DEVICE_TYPE, default=current_device_type
+                    ): vol.In(
+                        {
+                            DEVICE_TYPE_GO: "Blue Connect Go",
+                            DEVICE_TYPE_PLUS: "Blue Connect Plus",
+                        }
+                    ),
+                    vol.Required(CONF_DEVICE_NAME, default=current_device_name): str,
+                }
             ),
         )
