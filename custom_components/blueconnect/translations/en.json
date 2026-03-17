@@ -27,7 +27,7 @@
             },
             "fit50": {
                 "title": "Fit50 Adapter Configuration",
-                "description": "Is your Blue Connect Device installed with a Fit50 accessory on the circulation pipe ?",
+                "description": "Is your Blue Connect Device installed with a Fit50 accessory on the circulation pipe?",
                 "data": {
                     "fit50_mode": "Device has Fit50 adapter"
                 }

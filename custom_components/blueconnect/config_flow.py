@@ -68,7 +68,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        return BCGoOptionsFlow()
+        return BCGoOptionsFlow(config_entry)
 
     async def _get_device_data(
         self, discovery_info: BluetoothServiceInfo
@@ -315,6 +315,10 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
 
 class BCGoOptionsFlow(OptionsFlow):
     """Handle options flow for BlueConnect integration."""
+
+    def __init__(self, config_entry) -> None:
+        """Initialize the options flow."""
+        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
