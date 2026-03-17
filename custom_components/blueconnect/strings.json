@@ -20,14 +20,14 @@
       },
       "fit50": {
         "title": "Fit50 Adapter Configuration",
-        "description": "Is your device mounted on the circulation line with a Fit50 adapter? If yes, measurements will only be taken when the circulation pump is running.",
+        "description": "Is you Blue Connect Device installed with a Fit50 accessory on the circulation pipe ?",
         "data": {
           "fit50_mode": "Device has Fit50 adapter"
         }
       },
       "pump_entity": {
         "title": "Select Circulation Pump Entity",
-        "description": "Select the switch or binary sensor entity that indicates when the circulation pump is running. Measurements will only be taken when this entity is 'on'.",
+        "description": "Select the switch or binary_sensor entity reflecting the state of your circulation pump. Measurement will be taken at selected regular interval only when the circulation pump is running.",
         "data": {
           "pump_entity": "Circulation Pump Entity"
         }
