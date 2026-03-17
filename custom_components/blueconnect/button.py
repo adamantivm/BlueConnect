@@ -60,7 +60,7 @@ class TakeMeasurementImmediately(
             device_name = f"BlueConnect {device_address}"
 
         self._attr_unique_id = f"{device_address}_take_measurement".lower().replace(":", "_").replace(" ", "_")
-        self._attr_name = "Take Measurement"
+        self._attr_name = None
         self._id = device_address
 
         # Get device model from config entry
