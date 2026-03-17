@@ -50,8 +50,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _LOGGER.warning(f"Pump entity {pump_entity} not found")
             elif pump_state.state not in ["on", "true", "1"]:
                 _LOGGER.debug(f"Pump is off (state: {pump_state.state}), skipping measurement")
-                # Return current data without updating
-                return coordinator.data
+                # Only return current data if we actually have previous data;
+                # on first refresh, coordinator.data is None so we must take a measurement.
+                if coordinator.data is not None:
+                    return coordinator.data
+                _LOGGER.debug(
+                    "No previous data available while pump is off; performing initial measurement"
+                )
 
         ble_device = bluetooth.async_ble_device_from_address(hass, address)
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
