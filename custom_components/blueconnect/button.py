@@ -27,17 +27,18 @@ async def async_setup_entry(
     ]
 
     async_add_entities([
-        TakeMeasurementImmediately(coordinator, coordinator.data, hass, entry),
+        TakeMeasurementImmediately(coordinator, hass, entry),
     ])
 
 
 class TakeMeasurementImmediately(
     CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], ButtonEntity
 ):
+    _attr_has_entity_name = True
+
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
-        blueconnect_go_device: BlueConnectGoDevice,
         hass: HomeAssistant,
         entry: ConfigEntry,
     ) -> None:
@@ -45,16 +46,15 @@ class TakeMeasurementImmediately(
         super().__init__(coordinator)
         self.hass = hass
         self.entry = entry
-        self.device = blueconnect_go_device
 
         # Get the device address from entry unique_id (MAC address)
         device_address = entry.unique_id
 
         # Use custom device name from config entry if available
         device_name = entry.data.get(CONF_DEVICE_NAME)
-        if not device_name and blueconnect_go_device:
+        if not device_name and coordinator.data:
             # Fallback to default name from device
-            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+            device_name = f"{coordinator.data.name} {coordinator.data.identifier}"
         elif not device_name:
             # Final fallback if device is not available
             device_name = f"BlueConnect {device_address}"
@@ -71,8 +71,8 @@ class TakeMeasurementImmediately(
             model = "Blue Connect Go"
 
         # Get hardware and software versions from device if available
-        hw_version = blueconnect_go_device.hw_version if blueconnect_go_device else None
-        sw_version = blueconnect_go_device.sw_version if blueconnect_go_device else None
+        hw_version = coordinator.data.hw_version if coordinator.data else None
+        sw_version = coordinator.data.sw_version if coordinator.data else None
 
         self._attr_device_info = DeviceInfo(
             connections={
