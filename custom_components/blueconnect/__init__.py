@@ -43,8 +43,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         fit50_mode = entry.data.get(CONF_FIT50_MODE, False)
         pump_entity = entry.data.get(CONF_PUMP_ENTITY)
 
-        # If Fit50 mode is enabled, check pump state (but skip check for first measurement)
-        if fit50_mode and pump_entity and coordinator.data is not None:
+        # If Fit50 mode is enabled, check pump state before taking any measurement
+        if fit50_mode and pump_entity:
             pump_state = hass.states.get(pump_entity)
             if pump_state is None:
                 _LOGGER.warning(f"Pump entity {pump_entity} not found")
