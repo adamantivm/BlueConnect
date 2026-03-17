@@ -1,6 +1,6 @@
 {
   "domain": "blueconnect",
-  "name": "Blue Connect Go",
+  "name": "Blue Connect",
   "codeowners": ["@adamantivm"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],

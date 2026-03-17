@@ -1,6 +1,6 @@
-# Blue Connect Go
+# Blue Connect
 
-Home Assistant BLE Integration for the Blueriiot Blue Connect Go Pool Monitor
+Home Assistant BLE Integration for the Blueriiot Blue Connect Pool Monitor
 
 This integration is heavily based (basiscally started as a copy/paste) on the [Yinmik BLE-YC01 Integration](https://github.com/jdeath/BLE-YC01) by @jdeath.
 
@@ -13,7 +13,7 @@ on that thread including @vampcp, @JosePortillo, @rzulian, @A.J.O and others.
 
 # Installation
 
-Install this repo in HACS, then add the Blue Connect Go integration. Restart Home Assistant. The device should be found automatically in a few minutes,
+Install this repo in HACS, then add the Blue Connect integration. Restart Home Assistant. The device should be found automatically in a few minutes,
 or you can add it manually via Settings > Devices and Services > + Add Integration
 
 # Configuration

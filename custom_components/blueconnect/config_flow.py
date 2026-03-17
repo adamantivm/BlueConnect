@@ -52,7 +52,7 @@ class BCGoDeviceUpdateError(Exception):
 
 
 class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Blue Connect Go BLE."""
+    """Handle a config flow for Blue Connect BLE."""
 
     VERSION = 1
 
