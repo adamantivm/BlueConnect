@@ -46,13 +46,12 @@ The standard model provides these sensors:
 - **Temperature**: Pool water temperature
 - **pH**: Pool pH level
 - **ORP (Sanitation)**: Oxidation-reduction potential (measures sanitizer effectiveness)
-- **Free Chlorine**: Chlorine concentration in the pool
 - **Battery**: Battery percentage
 - **Battery Voltage**: Voltage of the device battery
 
 ### Blue Connect Plus
 The Plus model includes all the sensors from the Go model, plus:
-- **Salinity**: Salt concentration in the pool water (PPM)
+- **Salinity**: Salt concentration in the pool water (g/L)
 - **Electrical Conductivity (EC)**: Measures the water's ability to conduct electricity (μS/cm)
 
 **Important**: Selecting the correct device type is crucial because it determines which sensors are available. If you select "Blue Connect Go" for a Plus device, the salinity and EC sensors will not be created.
@@ -65,7 +64,6 @@ When you enable Fit50 mode during configuration:
 - You select the Home Assistant entity (a `switch` or `binary_sensor`) that controls or monitors your circulation pump.
 - The integration will **only perform measurements when that pump entity is in the `on` state**.
 - This ensures that all readings are taken from actively circulating, representative pool water.
-- The first measurement after the integration is loaded (when no prior data exists yet) is always performed regardless of pump state, so that initial sensor values are populated.
 
 If you are not using a Fit50 adapter and instead float or clip the Blue Connect directly in the pool, you should leave Fit50 mode disabled. In that case, measurements are taken on the normal schedule regardless of any pump state.
 

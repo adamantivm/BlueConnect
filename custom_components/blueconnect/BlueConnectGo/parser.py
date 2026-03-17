@@ -95,7 +95,6 @@ class BlueConnectGoBluetoothDeviceData:
         raw_orp = int.from_bytes(data[5:7], byteorder="little")
         # device.sensors["ORP"] = raw_orp / 3.86 - 21.57826
         device.sensors["ORP"] = raw_orp / 4.0 - 5.0
-        device.sensors["chlorine"] = (raw_orp / 4.0 - 5.0 - 650.0) / 200.0 * 10.0
 
         raw_cond = int.from_bytes(data[7:9], byteorder="little")
         if raw_cond != 0:

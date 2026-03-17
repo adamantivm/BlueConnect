@@ -28,7 +28,6 @@ from homeassistant.helpers.update_coordinator import (
     TimestampDataUpdateCoordinator,
 )
 from datetime import datetime
-import homeassistant.util.dt as dt_util
 
 from .BlueConnectGo import BlueConnectGoDevice
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
@@ -219,6 +218,8 @@ class BlueConnectSensor(
     @property
     def native_value(self) -> StateType:
         """Return the value reported by the sensor."""
+        if self.coordinator.data is None:
+            return None
         try:
             return self.coordinator.data.sensors[self.entity_description.key]
         except KeyError:
