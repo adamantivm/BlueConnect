@@ -13,17 +13,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
 
-from .const import (
-    BUTTON_CHAR_UUID,
-    DIS_FIRMWARE_REVISION_UUID,
-    DIS_HARDWARE_REVISION_UUID,
-    DIS_MANUFACTURER_NAME_UUID,
-    DIS_MODEL_NUMBER_UUID,
-    DIS_SERIAL_NUMBER_UUID,
-    DIS_SOFTWARE_REVISION_UUID,
-    NOTIFY_CHAR_UUID,
-    NOTIFY_TIMEOUT,
-)
+from .const import BUTTON_CHAR_UUID, NOTIFY_CHAR_UUID, NOTIFY_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,94 +48,6 @@ class BlueConnectGoBluetoothDeviceData:
         super().__init__()
         self.logger = logger
         self.logger.debug("In Device Data")
-
-    async def _read_gatt_char_safe(
-        self, client: BleakClient, uuid: str, description: str
-    ) -> str | None:
-        """Safely read a GATT characteristic, returning None if not available."""
-        try:
-            data = await client.read_gatt_char(uuid)
-            if data:
-                value = data.decode("utf-8").strip("\x00")
-                _LOGGER.debug("Read %s: %s", description, value)
-                return value
-            return None
-        except Exception as err:
-            _LOGGER.debug("Failed to read %s (%s): %s", description, uuid, err)
-            return None
-
-    async def _discover_and_log_services(self, client: BleakClient) -> None:
-        """Discover and log all available BLE services and characteristics for debugging."""
-        try:
-            _LOGGER.info("Discovering BLE services and characteristics...")
-            services = client.services
-            if services:
-                for service in services:
-                    _LOGGER.info(
-                        "Service: %s (%s)", service.uuid, service.description or "Unknown"
-                    )
-                    for char in service.characteristics:
-                        _LOGGER.info(
-                            "  Characteristic: %s (Properties: %s)",
-                            char.uuid,
-                            char.properties,
-                        )
-            else:
-                _LOGGER.warning("No services discovered")
-        except Exception as err:
-            _LOGGER.warning("Failed to discover services: %s", err)
-
-    async def _read_device_info(
-        self, client: BleakClient, device: BlueConnectGoDevice
-    ) -> None:
-        """Read device information from standard BLE Device Information Service."""
-        _LOGGER.debug("Reading device information characteristics...")
-
-        # Try to read hardware version
-        hw_version = await self._read_gatt_char_safe(
-            client, DIS_HARDWARE_REVISION_UUID, "Hardware Revision"
-        )
-        if hw_version:
-            device.hw_version = hw_version
-
-        # Try to read software version (try both firmware and software revision)
-        fw_version = await self._read_gatt_char_safe(
-            client, DIS_FIRMWARE_REVISION_UUID, "Firmware Revision"
-        )
-        sw_version = await self._read_gatt_char_safe(
-            client, DIS_SOFTWARE_REVISION_UUID, "Software Revision"
-        )
-
-        # Prefer firmware revision, but use software revision as fallback
-        if fw_version:
-            device.sw_version = fw_version
-        elif sw_version:
-            device.sw_version = sw_version
-
-        # Also read and log other device info for debugging
-        manufacturer = await self._read_gatt_char_safe(
-            client, DIS_MANUFACTURER_NAME_UUID, "Manufacturer Name"
-        )
-        model = await self._read_gatt_char_safe(
-            client, DIS_MODEL_NUMBER_UUID, "Model Number"
-        )
-        serial = await self._read_gatt_char_safe(
-            client, DIS_SERIAL_NUMBER_UUID, "Serial Number"
-        )
-
-        if manufacturer:
-            _LOGGER.info("Device Manufacturer: %s", manufacturer)
-        if model:
-            _LOGGER.info("Device Model: %s", model)
-        if serial:
-            _LOGGER.info("Device Serial: %s", serial)
-
-        _LOGGER.info(
-            "Device versions - HW: %s, SW: %s",
-            device.hw_version or "Not available",
-            device.sw_version or "Not available",
-        )
-
 
     async def _get_status(
         self, client: BleakClient, device: BlueConnectGoDevice
@@ -230,14 +132,6 @@ class BlueConnectGoBluetoothDeviceData:
                 BleakClient, ble_device, ble_device.address
             )
             _LOGGER.debug("Got Client")
-
-            # Discover and log all services/characteristics for debugging
-            await self._discover_and_log_services(client)
-
-            # Read device information (firmware/hardware versions)
-            await self._read_device_info(client, device)
-
-            # Get sensor status
             await self._get_status(client, device)
             _LOGGER.debug("got Status")
             await client.disconnect()
