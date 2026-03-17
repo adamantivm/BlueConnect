@@ -34,7 +34,7 @@ async def async_setup_entry(
     ]
 
     async_add_entities([
-        MeasurementIntervalNumber(coordinator, coordinator.data, entry),
+        MeasurementIntervalNumber(coordinator, entry),
     ])
 
 
@@ -55,20 +55,25 @@ class MeasurementIntervalNumber(
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
-        blueconnect_go_device: BlueConnectGoDevice,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the measurement interval number entity."""
         super().__init__(coordinator)
         self.entry = entry
 
+        # Get the device address from entry unique_id (MAC address)
+        device_address = entry.unique_id
+
         # Use custom device name from config entry if available
         device_name = entry.data.get(CONF_DEVICE_NAME)
-        if not device_name:
-            # Fallback to default name
-            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+        if not device_name and coordinator.data:
+            # Fallback to default name from device
+            device_name = f"{coordinator.data.name} {coordinator.data.identifier}"
+        elif not device_name:
+            # Final fallback if device is not available
+            device_name = f"BlueConnect {device_address}"
 
-        self._attr_unique_id = f"{blueconnect_go_device.address}_measurement_interval"
+        self._attr_unique_id = f"{device_address}_measurement_interval"
         self._attr_name = "Measurement Interval"
 
         # Get device model from config entry
@@ -78,18 +83,22 @@ class MeasurementIntervalNumber(
         else:
             model = "Blue Connect Go"
 
+        # Get hardware and software versions from device if available
+        hw_version = coordinator.data.hw_version if coordinator.data else None
+        sw_version = coordinator.data.sw_version if coordinator.data else None
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
                     CONNECTION_BLUETOOTH,
-                    blueconnect_go_device.address,
+                    device_address,
                 )
             },
             name=device_name,
             manufacturer="Blueriiot",
             model=model,
-            hw_version=blueconnect_go_device.hw_version,
-            sw_version=blueconnect_go_device.sw_version,
+            hw_version=hw_version,
+            sw_version=sw_version,
         )
 
     @property

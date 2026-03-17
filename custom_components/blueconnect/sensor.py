@@ -122,24 +122,36 @@ async def async_setup_entry(
         sensors_mapping.pop("salt", None)
 
     entities = []
-    _LOGGER.debug("got sensors: %s", coordinator.data.sensors)
-    for sensor_type, sensor_value in coordinator.data.sensors.items():
-        if sensor_type not in sensors_mapping:
-            _LOGGER.debug(
-                "Unknown sensor type detected: %s, %s",
-                sensor_type,
-                sensor_value,
+
+    # Only iterate over sensors if coordinator.data is available
+    if coordinator.data and coordinator.data.sensors:
+        _LOGGER.debug("got sensors: %s", coordinator.data.sensors)
+        for sensor_type, sensor_value in coordinator.data.sensors.items():
+            if sensor_type not in sensors_mapping:
+                _LOGGER.debug(
+                    "Unknown sensor type detected: %s, %s",
+                    sensor_type,
+                    sensor_value,
+                )
+                continue
+            entities.append(
+                BlueConnectSensor(
+                    coordinator, sensors_mapping[sensor_type], entry
+                )
             )
-            continue
-        entities.append(
-            BlueConnectSensor(
-                coordinator, coordinator.data, sensors_mapping[sensor_type], entry
+    else:
+        # If no data yet, create sensors based on sensors_mapping
+        _LOGGER.debug("No data available yet, creating sensors from mapping")
+        for sensor_type, sensor_description in sensors_mapping.items():
+            entities.append(
+                BlueConnectSensor(
+                    coordinator, sensor_description, entry
+                )
             )
-        )
 
     # Add last successful measurement timestamp sensor
     entities.append(
-        LastMeasurementTimestampSensor(coordinator, coordinator.data, entry)
+        LastMeasurementTimestampSensor(coordinator, entry)
     )
 
     async_add_entities(entities)
@@ -156,7 +168,6 @@ class BlueConnectSensor(
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
-        blueconnect_go_device: BlueConnectGoDevice,
         entity_description: SensorEntityDescription,
         entry: config_entries.ConfigEntry,
     ) -> None:
@@ -164,15 +175,21 @@ class BlueConnectSensor(
         super().__init__(coordinator)
         self.entity_description = entity_description
 
+        # Get the device address from entry unique_id (MAC address)
+        device_address = entry.unique_id
+
         # Use custom device name from config entry if available
         device_name = entry.data.get(CONF_DEVICE_NAME)
-        if not device_name:
-            # Fallback to default name
-            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+        if not device_name and coordinator.data:
+            # Fallback to default name from device
+            device_name = f"{coordinator.data.name} {coordinator.data.identifier}"
+        elif not device_name:
+            # Final fallback if device is not available
+            device_name = f"BlueConnect {device_address}"
 
-        self._attr_unique_id = f"{blueconnect_go_device.address}_{entity_description.key}"
+        self._attr_unique_id = f"{device_address}_{entity_description.key}"
 
-        self._id = blueconnect_go_device.address
+        self._id = device_address
 
         # Get device model from config entry
         device_type = entry.data.get(CONF_DEVICE_TYPE)
@@ -181,18 +198,22 @@ class BlueConnectSensor(
         else:
             model = "Blue Connect Go"
 
+        # Get hardware and software versions from device if available
+        hw_version = coordinator.data.hw_version if coordinator.data else None
+        sw_version = coordinator.data.sw_version if coordinator.data else None
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
                     CONNECTION_BLUETOOTH,
-                    blueconnect_go_device.address,
+                    device_address,
                 )
             },
             name=device_name,
             manufacturer="Blueriiot",
             model=model,
-            hw_version=blueconnect_go_device.hw_version,
-            sw_version=blueconnect_go_device.sw_version,
+            hw_version=hw_version,
+            sw_version=sw_version,
         )
 
     @property
@@ -217,19 +238,24 @@ class LastMeasurementTimestampSensor(
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
-        blueconnect_go_device: BlueConnectGoDevice,
         entry: config_entries.ConfigEntry,
     ) -> None:
         """Initialize the last measurement timestamp sensor."""
         super().__init__(coordinator)
 
+        # Get the device address from entry unique_id (MAC address)
+        device_address = entry.unique_id
+
         # Use custom device name from config entry if available
         device_name = entry.data.get(CONF_DEVICE_NAME)
-        if not device_name:
-            # Fallback to default name
-            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+        if not device_name and coordinator.data:
+            # Fallback to default name from device
+            device_name = f"{coordinator.data.name} {coordinator.data.identifier}"
+        elif not device_name:
+            # Final fallback if device is not available
+            device_name = f"BlueConnect {device_address}"
 
-        self._attr_unique_id = f"{blueconnect_go_device.address}_last_measurement"
+        self._attr_unique_id = f"{device_address}_last_measurement"
         self._attr_name = "Last Successful Measurement"
 
         # Get device model from config entry
@@ -239,18 +265,22 @@ class LastMeasurementTimestampSensor(
         else:
             model = "Blue Connect Go"
 
+        # Get hardware and software versions from device if available
+        hw_version = coordinator.data.hw_version if coordinator.data else None
+        sw_version = coordinator.data.sw_version if coordinator.data else None
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
                     CONNECTION_BLUETOOTH,
-                    blueconnect_go_device.address,
+                    device_address,
                 )
             },
             name=device_name,
             manufacturer="Blueriiot",
             model=model,
-            hw_version=blueconnect_go_device.hw_version,
-            sw_version=blueconnect_go_device.sw_version,
+            hw_version=hw_version,
+            sw_version=sw_version,
         )
 
     @property
