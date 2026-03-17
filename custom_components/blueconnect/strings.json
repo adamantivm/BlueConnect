@@ -18,6 +18,20 @@
           "device_type": "Device Type"
         }
       },
+      "fit50": {
+        "title": "Fit50 Adapter Configuration",
+        "description": "Is your Blue Connect Device installed with a Fit50 accessory on the circulation pipe ?",
+        "data": {
+          "fit50_mode": "Device has Fit50 adapter"
+        }
+      },
+      "pump_entity": {
+        "title": "Select Circulation Pump Entity",
+        "description": "Select the switch or binary_sensor entity reflecting the state of your circulation pump. Measurement will be taken at selected regular interval only when the circulation pump is running.",
+        "data": {
+          "pump_entity": "Circulation Pump Entity"
+        }
+      },
       "device_name": {
         "title": "Name Your Device",
         "description": "Enter a name for this device.",
@@ -38,10 +52,12 @@
     "step": {
       "init": {
         "title": "Configure BlueConnect Device",
-        "description": "Update device type and name. Changes will take effect after reloading the integration.",
+        "description": "Update device type, name, and Fit50 adapter settings. Changes will take effect after reloading the integration.",
         "data": {
           "device_type": "Device Type",
-          "device_name": "Device Name"
+          "device_name": "Device Name",
+          "fit50_mode": "Device has Fit50 adapter",
+          "pump_entity": "Circulation Pump Entity"
         }
       }
     }

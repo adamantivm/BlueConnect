@@ -22,6 +22,8 @@ from .BlueConnectGo import BlueConnectGoBluetoothDeviceData, BlueConnectGoDevice
 from .const import (
     CONF_DEVICE_NAME,
     CONF_DEVICE_TYPE,
+    CONF_FIT50_MODE,
+    CONF_PUMP_ENTITY,
     DEVICE_TYPE_GO,
     DEVICE_TYPE_PLUS,
     DOMAIN,
@@ -60,6 +62,8 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered_devices: dict[str, Discovery] = {}
         self._device_type: str | None = None
         self._device_name: str | None = None
+        self._fit50_mode: bool = False
+        self._pump_entity: str | None = None
 
     @staticmethod
     def async_get_options_flow(config_entry):
@@ -142,7 +146,7 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle device type selection."""
         if user_input is not None:
             self._device_type = user_input[CONF_DEVICE_TYPE]
-            return await self.async_step_device_name()
+            return await self.async_step_fit50()
 
         return self.async_show_form(
             step_id="device_type",
@@ -159,18 +163,72 @@ class BCGoConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders=self.context.get("title_placeholders", {}),
         )
 
+    async def async_step_fit50(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle Fit50 adapter configuration."""
+        if user_input is not None:
+            self._fit50_mode = user_input.get(CONF_FIT50_MODE, False)
+            if self._fit50_mode:
+                return await self.async_step_pump_entity()
+            else:
+                return await self.async_step_device_name()
+
+        return self.async_show_form(
+            step_id="fit50",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_FIT50_MODE, default=False): bool,
+                }
+            ),
+            description_placeholders=self.context.get("title_placeholders", {}),
+        )
+
+    async def async_step_pump_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle circulation pump entity selection."""
+        from homeassistant.helpers import selector
+
+        if user_input is not None:
+            self._pump_entity = user_input.get(CONF_PUMP_ENTITY)
+            return await self.async_step_device_name()
+
+        return self.async_show_form(
+            step_id="pump_entity",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PUMP_ENTITY): selector.EntitySelector(
+                        selector.EntitySelectorConfig(
+                            domain=["switch", "binary_sensor"]
+                        )
+                    ),
+                }
+            ),
+            description_placeholders=self.context.get("title_placeholders", {}),
+        )
+
     async def async_step_device_name(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle device naming."""
         if user_input is not None:
             self._device_name = user_input[CONF_DEVICE_NAME]
+
+            # Prepare config data
+            config_data = {
+                CONF_DEVICE_TYPE: self._device_type,
+                CONF_DEVICE_NAME: self._device_name,
+                CONF_FIT50_MODE: self._fit50_mode,
+            }
+
+            # Add pump entity if Fit50 mode is enabled
+            if self._fit50_mode and self._pump_entity:
+                config_data[CONF_PUMP_ENTITY] = self._pump_entity
+
             return self.async_create_entry(
                 title=self._device_name,
-                data={
-                    CONF_DEVICE_TYPE: self._device_type,
-                    CONF_DEVICE_NAME: self._device_name,
-                },
+                data=config_data,
             )
 
         # Get default name from discovered device
@@ -262,15 +320,28 @@ class BCGoOptionsFlow(OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
+        from homeassistant.helpers import selector
+
         if user_input is not None:
+            # Prepare updated config data
+            config_data = {
+                **self.config_entry.data,
+                CONF_DEVICE_TYPE: user_input[CONF_DEVICE_TYPE],
+                CONF_DEVICE_NAME: user_input[CONF_DEVICE_NAME],
+                CONF_FIT50_MODE: user_input.get(CONF_FIT50_MODE, False),
+            }
+
+            # Add or remove pump entity based on Fit50 mode
+            if user_input.get(CONF_FIT50_MODE, False) and user_input.get(CONF_PUMP_ENTITY):
+                config_data[CONF_PUMP_ENTITY] = user_input[CONF_PUMP_ENTITY]
+            elif CONF_PUMP_ENTITY in config_data:
+                # Remove pump entity if Fit50 mode is disabled
+                config_data.pop(CONF_PUMP_ENTITY, None)
+
             # Update config entry data with new values
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
-                data={
-                    **self.config_entry.data,
-                    CONF_DEVICE_TYPE: user_input[CONF_DEVICE_TYPE],
-                    CONF_DEVICE_NAME: user_input[CONF_DEVICE_NAME],
-                },
+                data=config_data,
             )
             # Trigger reload to apply changes
             await self.hass.config_entries.async_reload(self.config_entry.entry_id)
@@ -283,20 +354,32 @@ class BCGoOptionsFlow(OptionsFlow):
         current_device_name = self.config_entry.data.get(
             CONF_DEVICE_NAME, self.config_entry.title
         )
+        current_fit50_mode = self.config_entry.data.get(CONF_FIT50_MODE, False)
+        current_pump_entity = self.config_entry.data.get(CONF_PUMP_ENTITY)
+
+        # Build schema based on Fit50 mode
+        schema_dict = {
+            vol.Required(
+                CONF_DEVICE_TYPE, default=current_device_type
+            ): vol.In(
+                {
+                    DEVICE_TYPE_GO: "Blue Connect Go",
+                    DEVICE_TYPE_PLUS: "Blue Connect Plus",
+                }
+            ),
+            vol.Required(CONF_DEVICE_NAME, default=current_device_name): str,
+            vol.Required(CONF_FIT50_MODE, default=current_fit50_mode): bool,
+        }
+
+        # Add pump entity selector if Fit50 mode is currently enabled or if user wants to enable it
+        if current_fit50_mode:
+            schema_dict[vol.Optional(CONF_PUMP_ENTITY, default=current_pump_entity)] = selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["switch", "binary_sensor"]
+                )
+            )
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_DEVICE_TYPE, default=current_device_type
-                    ): vol.In(
-                        {
-                            DEVICE_TYPE_GO: "Blue Connect Go",
-                            DEVICE_TYPE_PLUS: "Blue Connect Plus",
-                        }
-                    ),
-                    vol.Required(CONF_DEVICE_NAME, default=current_device_name): str,
-                }
-            ),
+            data_schema=vol.Schema(schema_dict),
         )
