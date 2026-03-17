@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordina
 from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
 from .const import CONF_FIT50_MODE, CONF_PUMP_ENTITY, DEFAULT_MEASUREMENT_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.BINARY_SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,8 +43,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         fit50_mode = entry.data.get(CONF_FIT50_MODE, False)
         pump_entity = entry.data.get(CONF_PUMP_ENTITY)
 
-        # If Fit50 mode is enabled, check pump state (but skip check for first measurement)
-        if fit50_mode and pump_entity and coordinator.data is not None:
+        # If Fit50 mode is enabled, check pump state before taking any measurement
+        if fit50_mode and pump_entity:
             pump_state = hass.states.get(pump_entity)
             if pump_state is None:
                 _LOGGER.warning(f"Pump entity {pump_entity} not found")
