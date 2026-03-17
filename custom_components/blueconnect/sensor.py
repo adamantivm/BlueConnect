@@ -27,6 +27,8 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+from datetime import datetime
+import homeassistant.util.dt as dt_util
 
 from .BlueConnectGo import BlueConnectGoDevice
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
@@ -135,6 +137,11 @@ async def async_setup_entry(
             )
         )
 
+    # Add last successful measurement timestamp sensor
+    entities.append(
+        LastMeasurementTimestampSensor(coordinator, coordinator.data, entry)
+    )
+
     async_add_entities(entities)
 
 
@@ -195,3 +202,60 @@ class BlueConnectSensor(
             return self.coordinator.data.sensors[self.entity_description.key]
         except KeyError:
             return None
+
+
+class LastMeasurementTimestampSensor(
+    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
+):
+    """Sensor that shows the last successful measurement timestamp."""
+
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:clock-check-outline"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        blueconnect_go_device: BlueConnectGoDevice,
+        entry: config_entries.ConfigEntry,
+    ) -> None:
+        """Initialize the last measurement timestamp sensor."""
+        super().__init__(coordinator)
+
+        # Use custom device name from config entry if available
+        device_name = entry.data.get(CONF_DEVICE_NAME)
+        if not device_name:
+            # Fallback to default name
+            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+
+        self._attr_unique_id = f"{blueconnect_go_device.address}_last_measurement"
+        self._attr_name = "Last Successful Measurement"
+
+        # Get device model from config entry
+        device_type = entry.data.get(CONF_DEVICE_TYPE)
+        if device_type == DEVICE_TYPE_PLUS:
+            model = "Blue Connect Plus"
+        else:
+            model = "Blue Connect Go"
+
+        self._attr_device_info = DeviceInfo(
+            connections={
+                (
+                    CONNECTION_BLUETOOTH,
+                    blueconnect_go_device.address,
+                )
+            },
+            name=device_name,
+            manufacturer="Blueriiot",
+            model=model,
+            hw_version=blueconnect_go_device.hw_version,
+            sw_version=blueconnect_go_device.sw_version,
+        )
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the timestamp of the last successful update."""
+        if self.coordinator.last_update_success and self.coordinator.last_update_success_time:
+            return self.coordinator.last_update_success_time
+        return None

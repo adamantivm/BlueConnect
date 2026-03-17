@@ -13,9 +13,9 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_FIT50_MODE, CONF_PUMP_ENTITY, DEFAULT_MEASUREMENT_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +38,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _async_update_method():
         """Get data from BlueConnect Go BLE."""
         _LOGGER.debug("async_update_method")
+
+        # Check if Fit50 mode is enabled
+        fit50_mode = entry.data.get(CONF_FIT50_MODE, False)
+        pump_entity = entry.data.get(CONF_PUMP_ENTITY)
+
+        # If Fit50 mode is enabled, check pump state
+        if fit50_mode and pump_entity:
+            pump_state = hass.states.get(pump_entity)
+            if pump_state is None:
+                _LOGGER.warning(f"Pump entity {pump_entity} not found")
+            elif pump_state.state not in ["on", "true", "1"]:
+                _LOGGER.debug(f"Pump is off (state: {pump_state.state}), skipping measurement")
+                # Return current data without updating
+                if coordinator.data:
+                    return coordinator.data
+                raise UpdateFailed("Pump is not running, skipping measurement")
+
         ble_device = bluetooth.async_ble_device_from_address(hass, address)
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
 
@@ -48,12 +65,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         return data
 
+    # Use default interval initially - will be updated by the number entity
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name=DOMAIN,
         update_method=_async_update_method,
-        update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+        update_interval=timedelta(seconds=int(DEFAULT_MEASUREMENT_INTERVAL * 3600)),
     )
 
     await coordinator.async_config_entry_first_refresh()
