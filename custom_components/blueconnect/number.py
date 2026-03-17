@@ -17,7 +17,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .BlueConnectGo import BlueConnectGoDevice
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEFAULT_MEASUREMENT_INTERVAL, DEVICE_TYPE_PLUS, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, CONF_MEASUREMENT_INTERVAL, DEFAULT_MEASUREMENT_INTERVAL, DEVICE_TYPE_PLUS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,7 +104,11 @@ class MeasurementIntervalNumber(
     @property
     def native_value(self) -> float:
         """Return the current measurement interval in hours."""
-        # Get from coordinator's update_interval if available, else use default
+        # Get from config entry if available, else from coordinator, else use default
+        stored_value = self.entry.data.get(CONF_MEASUREMENT_INTERVAL)
+        if stored_value is not None:
+            return stored_value
+        # Fallback to coordinator's update_interval if available
         if hasattr(self.coordinator, 'update_interval') and self.coordinator.update_interval:
             return self.coordinator.update_interval.total_seconds() / 3600
         return DEFAULT_MEASUREMENT_INTERVAL
@@ -126,6 +130,10 @@ class MeasurementIntervalNumber(
             # Update coordinator's update interval
             _LOGGER.info(f"Setting update interval to {interval_seconds} seconds")
             self.coordinator.update_interval = timedelta(seconds=interval_seconds)
+
+        # Persist the value to config entry
+        new_data = {**self.entry.data, CONF_MEASUREMENT_INTERVAL: value}
+        self.hass.config_entries.async_update_entry(self.entry, data=new_data)
 
         # Force a refresh of the coordinator to apply the new interval
         await self.coordinator.async_refresh()

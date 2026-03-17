@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordinator, UpdateFailed
 
 from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
-from .const import CONF_FIT50_MODE, CONF_PUMP_ENTITY, DEFAULT_MEASUREMENT_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_FIT50_MODE, CONF_MEASUREMENT_INTERVAL, CONF_PUMP_ENTITY, DEFAULT_MEASUREMENT_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.BINARY_SENSOR]
 
@@ -63,13 +63,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         return data
 
-    # Use default interval initially - will be updated by the number entity
+    # Get the measurement interval from config entry, or use default
+    measurement_interval = entry.data.get(CONF_MEASUREMENT_INTERVAL, DEFAULT_MEASUREMENT_INTERVAL)
+
+    # Use the stored interval (or default if not set)
     coordinator = TimestampDataUpdateCoordinator(
         hass,
         _LOGGER,
         name=DOMAIN,
         update_method=_async_update_method,
-        update_interval=timedelta(seconds=int(DEFAULT_MEASUREMENT_INTERVAL * 3600)),
+        update_interval=timedelta(seconds=int(measurement_interval * 3600)) if measurement_interval > 0 else None,
     )
 
     await coordinator.async_config_entry_first_refresh()
