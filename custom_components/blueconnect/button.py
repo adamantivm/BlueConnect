@@ -34,6 +34,8 @@ async def async_setup_entry(
 class TakeMeasurementImmediately(
     CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], ButtonEntity
 ):
+    _attr_has_entity_name = True
+
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
