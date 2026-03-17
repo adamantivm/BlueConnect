@@ -13,7 +13,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
-    DataUpdateCoordinator,
+    TimestampDataUpdateCoordinator,
 )
 
 from .BlueConnectGo import BlueConnectGoDevice
@@ -29,7 +29,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the BlueConnect Go BLE number entities."""
 
-    coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
+    coordinator: TimestampDataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
         entry.entry_id
     ]
 
@@ -39,7 +39,7 @@ async def async_setup_entry(
 
 
 class MeasurementIntervalNumber(
-    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], NumberEntity
+    CoordinatorEntity[TimestampDataUpdateCoordinator[BlueConnectGoDevice]], NumberEntity
 ):
     """Number entity for measurement interval configuration."""
 
@@ -54,7 +54,7 @@ class MeasurementIntervalNumber(
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator: TimestampDataUpdateCoordinator,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the measurement interval number entity."""
