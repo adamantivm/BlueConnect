@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import TimestampDataUpdateCoordina
 from .BlueConnectGo import BlueConnectGoBluetoothDeviceData
 from .const import CONF_FIT50_MODE, CONF_PUMP_ENTITY, DEFAULT_MEASUREMENT_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.BINARY_SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
