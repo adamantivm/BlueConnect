@@ -12,7 +12,6 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     EntityCategory,
     UnitOfConductivity,
@@ -37,18 +36,19 @@ _LOGGER = logging.getLogger(__name__)
 SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
     "EC": SensorEntityDescription(
         key="EC",
-        name="Electrical Conductivity",
+        name="Conductivity",
         native_unit_of_measurement=UnitOfConductivity.MICROSIEMENS_PER_CM,
         state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:flash-triangle-outline",
+        icon="mdi:resistor",
         suggested_display_precision=0,
     ),
     "salt": SensorEntityDescription(
         key="salt",
         name="Salinity",
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        native_unit_of_measurement="g/L",
         state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:shaker-outline",
+        icon="mdi:water-opacity",
+        suggested_display_precision=3,
     ),
     "ORP": SensorEntityDescription(
         key="ORP",
@@ -56,7 +56,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
-        icon="mdi:alpha-v-circle",
+        icon="mdi:bacteria-outline",
         suggested_display_precision=0,
     ),
     "pH": SensorEntityDescription(
@@ -94,15 +94,6 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:pool-thermometer",
-        suggested_display_precision=2,
-    ),
-    "chlorine": SensorEntityDescription(
-        key="chlorine",
-        name="Free Chlorine",
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
-        icon="mdi:chemical-weapon",
         suggested_display_precision=2,
     ),
 }
