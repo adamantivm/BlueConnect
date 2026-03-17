@@ -11,7 +11,7 @@ from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 
 from .BlueConnectGo import BlueConnectGoDevice, BlueConnectGoBluetoothDeviceData
-from .const import DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +48,23 @@ class TakeMeasurementImmediately(
         self.entry = entry
         self.device = blueconnect_go_device
 
-        device_name = blueconnect_go_device.name or "BlueConnect"
-        name = f"{device_name} {blueconnect_go_device.identifier}"
+        # Use custom device name from config entry if available
+        device_name = entry.data.get(CONF_DEVICE_NAME)
+        if not device_name:
+            # Fallback to default name
+            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
 
-        self._attr_unique_id = f"{name}_take_measurement".lower().replace(":", "_").replace(" ", "_")
+        self._attr_unique_id = f"{blueconnect_go_device.address}_take_measurement".lower().replace(":", "_").replace(" ", "_")
         self._attr_name = "Take Measurement"
         self._id = blueconnect_go_device.address
+
+        # Get device model from config entry
+        device_type = entry.data.get(CONF_DEVICE_TYPE)
+        if device_type == DEVICE_TYPE_PLUS:
+            model = "Blue Connect Plus"
+        else:
+            model = "Blue Connect Go"
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
@@ -61,9 +72,9 @@ class TakeMeasurementImmediately(
                     blueconnect_go_device.address,
                 )
             },
-            name=name,
-            manufacturer="Blue Riiot",
-            model="Blue Connect Go",
+            name=device_name,
+            manufacturer="Blueriiot",
+            model=model,
             hw_version=blueconnect_go_device.hw_version,
             sw_version=blueconnect_go_device.sw_version,
         )

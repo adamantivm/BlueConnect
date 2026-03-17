@@ -12,7 +12,6 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     EntityCategory,
     UnitOfConductivity,
@@ -30,25 +29,26 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .BlueConnectGo import BlueConnectGoDevice
-from .const import DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
     "EC": SensorEntityDescription(
         key="EC",
-        name="Electrical Conductivity",
+        name="Conductivity",
         native_unit_of_measurement=UnitOfConductivity.MICROSIEMENS_PER_CM,
         state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:flash-triangle-outline",
+        icon="mdi:resistor",
         suggested_display_precision=0,
     ),
     "salt": SensorEntityDescription(
         key="salt",
         name="Salinity",
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        native_unit_of_measurement="g/L",
         state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:shaker-outline",
+        icon="mdi:water-opacity",
+        suggested_display_precision=3,
     ),
     "ORP": SensorEntityDescription(
         key="ORP",
@@ -56,7 +56,7 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
-        icon="mdi:alpha-v-circle",
+        icon="mdi:bacteria-outline",
         suggested_display_precision=0,
     ),
     "pH": SensorEntityDescription(
@@ -96,15 +96,6 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         icon="mdi:pool-thermometer",
         suggested_display_precision=2,
     ),
-    "chlorine": SensorEntityDescription(
-        key="chlorine",
-        name="Free Chlorine",
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
-        icon="mdi:chemical-weapon",
-        suggested_display_precision=2,
-    ),
 }
 
 
@@ -119,6 +110,15 @@ async def async_setup_entry(
         entry.entry_id
     ]
     sensors_mapping = SENSORS_MAPPING_TEMPLATE.copy()
+
+    # Get device type from config entry
+    device_type = entry.data.get(CONF_DEVICE_TYPE)
+
+    # Remove salinity and conductivity sensors if device is not Plus
+    if device_type != DEVICE_TYPE_PLUS:
+        sensors_mapping.pop("EC", None)
+        sensors_mapping.pop("salt", None)
+
     entities = []
     _LOGGER.debug("got sensors: %s", coordinator.data.sensors)
     for sensor_type, sensor_value in coordinator.data.sensors.items():
@@ -131,7 +131,7 @@ async def async_setup_entry(
             continue
         entities.append(
             BlueConnectSensor(
-                coordinator, coordinator.data, sensors_mapping[sensor_type]
+                coordinator, coordinator.data, sensors_mapping[sensor_type], entry
             )
         )
 
@@ -151,16 +151,29 @@ class BlueConnectSensor(
         coordinator: DataUpdateCoordinator,
         blueconnect_go_device: BlueConnectGoDevice,
         entity_description: SensorEntityDescription,
+        entry: config_entries.ConfigEntry,
     ) -> None:
         """Populate the BlueConnect Go entity with relevant data."""
         super().__init__(coordinator)
         self.entity_description = entity_description
 
-        name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+        # Use custom device name from config entry if available
+        device_name = entry.data.get(CONF_DEVICE_NAME)
+        if not device_name:
+            # Fallback to default name
+            device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
 
-        self._attr_unique_id = f"{name}_{entity_description.key}"
+        self._attr_unique_id = f"{blueconnect_go_device.address}_{entity_description.key}"
 
         self._id = blueconnect_go_device.address
+
+        # Get device model from config entry
+        device_type = entry.data.get(CONF_DEVICE_TYPE)
+        if device_type == DEVICE_TYPE_PLUS:
+            model = "Blue Connect Plus"
+        else:
+            model = "Blue Connect Go"
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
@@ -168,9 +181,9 @@ class BlueConnectSensor(
                     blueconnect_go_device.address,
                 )
             },
-            name=name,
-            manufacturer="Blue Riiot",
-            model="Blue Connect Go",
+            name=device_name,
+            manufacturer="Blueriiot",
+            model=model,
             hw_version=blueconnect_go_device.hw_version,
             sw_version=blueconnect_go_device.sw_version,
         )
