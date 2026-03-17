@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, TimestampDataUpdateCoordinator
 
 from .BlueConnectGo import BlueConnectGoDevice
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
@@ -22,7 +22,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the BlueConnect Go button."""
     
-    coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
+    coordinator: TimestampDataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
         entry.entry_id
     ]
 
@@ -32,13 +32,13 @@ async def async_setup_entry(
 
 
 class TakeMeasurementImmediately(
-    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], ButtonEntity
+    CoordinatorEntity[TimestampDataUpdateCoordinator[BlueConnectGoDevice]], ButtonEntity
 ):
     _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator: TimestampDataUpdateCoordinator,
         hass: HomeAssistant,
         entry: ConfigEntry,
     ) -> None:

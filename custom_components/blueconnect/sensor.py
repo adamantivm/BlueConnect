@@ -25,7 +25,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
-    DataUpdateCoordinator,
+    TimestampDataUpdateCoordinator,
 )
 from datetime import datetime
 import homeassistant.util.dt as dt_util
@@ -108,7 +108,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the BlueConnect Go BLE sensors."""
 
-    coordinator: DataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
+    coordinator: TimestampDataUpdateCoordinator[BlueConnectGoDevice] = hass.data[DOMAIN][
         entry.entry_id
     ]
     sensors_mapping = SENSORS_MAPPING_TEMPLATE.copy()
@@ -158,7 +158,7 @@ async def async_setup_entry(
 
 
 class BlueConnectSensor(
-    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
+    CoordinatorEntity[TimestampDataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
 ):
     """BlueConnect Go BLE sensors for the device."""
 
@@ -167,7 +167,7 @@ class BlueConnectSensor(
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator: TimestampDataUpdateCoordinator,
         entity_description: SensorEntityDescription,
         entry: config_entries.ConfigEntry,
     ) -> None:
@@ -226,7 +226,7 @@ class BlueConnectSensor(
 
 
 class LastMeasurementTimestampSensor(
-    CoordinatorEntity[DataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
+    CoordinatorEntity[TimestampDataUpdateCoordinator[BlueConnectGoDevice]], SensorEntity
 ):
     """Sensor that shows the last successful measurement timestamp."""
 
@@ -237,7 +237,7 @@ class LastMeasurementTimestampSensor(
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator: TimestampDataUpdateCoordinator,
         entry: config_entries.ConfigEntry,
     ) -> None:
         """Initialize the last measurement timestamp sensor."""
