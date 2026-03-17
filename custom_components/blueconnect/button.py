@@ -48,15 +48,21 @@ class TakeMeasurementImmediately(
         self.entry = entry
         self.device = blueconnect_go_device
 
+        # Get the device address from entry unique_id (MAC address)
+        device_address = entry.unique_id
+
         # Use custom device name from config entry if available
         device_name = entry.data.get(CONF_DEVICE_NAME)
-        if not device_name:
-            # Fallback to default name
+        if not device_name and blueconnect_go_device:
+            # Fallback to default name from device
             device_name = f"{blueconnect_go_device.name} {blueconnect_go_device.identifier}"
+        elif not device_name:
+            # Final fallback if device is not available
+            device_name = f"BlueConnect {device_address}"
 
-        self._attr_unique_id = f"{blueconnect_go_device.address}_take_measurement".lower().replace(":", "_").replace(" ", "_")
+        self._attr_unique_id = f"{device_address}_take_measurement".lower().replace(":", "_").replace(" ", "_")
         self._attr_name = "Take Measurement"
-        self._id = blueconnect_go_device.address
+        self._id = device_address
 
         # Get device model from config entry
         device_type = entry.data.get(CONF_DEVICE_TYPE)
@@ -65,27 +71,34 @@ class TakeMeasurementImmediately(
         else:
             model = "Blue Connect Go"
 
+        # Get hardware and software versions from device if available
+        hw_version = blueconnect_go_device.hw_version if blueconnect_go_device else None
+        sw_version = blueconnect_go_device.sw_version if blueconnect_go_device else None
+
         self._attr_device_info = DeviceInfo(
             connections={
                 (
                     "bluetooth",
-                    blueconnect_go_device.address,
+                    device_address,
                 )
             },
             name=device_name,
             manufacturer="Blueriiot",
             model=model,
-            hw_version=blueconnect_go_device.hw_version,
-            sw_version=blueconnect_go_device.sw_version,
+            hw_version=hw_version,
+            sw_version=sw_version,
         )
 
     async def async_press(self) -> None:
         """Trigger a measurement via Bluetooth."""
-        _LOGGER.info(f"Button pressed: starting measurement for {self.device.name} ({self.device.address})")
+        # Get the device address from entry unique_id (MAC address)
+        device_address = self.entry.unique_id
 
-        ble_device = async_ble_device_from_address(self.hass, self.device.address)
+        _LOGGER.info(f"Button pressed: starting measurement for device at {device_address}")
+
+        ble_device = async_ble_device_from_address(self.hass, device_address)
         if not ble_device:
-            _LOGGER.error(f"No Bluetooth device found at address {self.device.address}")
+            _LOGGER.error(f"No Bluetooth device found at address {device_address}")
             raise UpdateFailed("Bluetooth device not found")
 
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)

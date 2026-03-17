@@ -43,17 +43,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         fit50_mode = entry.data.get(CONF_FIT50_MODE, False)
         pump_entity = entry.data.get(CONF_PUMP_ENTITY)
 
-        # If Fit50 mode is enabled, check pump state
-        if fit50_mode and pump_entity:
+        # If Fit50 mode is enabled, check pump state (but skip check for first measurement)
+        if fit50_mode and pump_entity and coordinator.data is not None:
             pump_state = hass.states.get(pump_entity)
             if pump_state is None:
                 _LOGGER.warning(f"Pump entity {pump_entity} not found")
             elif pump_state.state not in ["on", "true", "1"]:
                 _LOGGER.debug(f"Pump is off (state: {pump_state.state}), skipping measurement")
                 # Return current data without updating
-                if coordinator.data:
-                    return coordinator.data
-                raise UpdateFailed("Pump is not running, skipping measurement")
+                return coordinator.data
 
         ble_device = bluetooth.async_ble_device_from_address(hass, address)
         bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
