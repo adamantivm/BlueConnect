@@ -7,10 +7,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.components.bluetooth import async_ble_device_from_address
-from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
-from .BlueConnectGo import BlueConnectGoDevice, BlueConnectGoBluetoothDeviceData
+from .BlueConnectGo import BlueConnectGoDevice
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_TYPE, DEVICE_TYPE_PLUS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,18 +95,5 @@ class TakeMeasurementImmediately(
 
         _LOGGER.info(f"Button pressed: starting measurement for device at {device_address}")
 
-        ble_device = async_ble_device_from_address(self.hass, device_address)
-        if not ble_device:
-            _LOGGER.error(f"No Bluetooth device found at address {device_address}")
-            raise UpdateFailed("Bluetooth device not found")
-
-        bcgo = BlueConnectGoBluetoothDeviceData(_LOGGER)
-
-        try:
-            data = await bcgo.update_device(ble_device)
-            _LOGGER.info("Measurement taken successfully.")
-            self.coordinator.async_set_updated_data(data)
-            _LOGGER.info("Coordinator has been updated.")
-        except Exception as err:
-            _LOGGER.error(f"Error while reading data: {err}")
-            raise UpdateFailed(f"Error while reading data: {err}") from err
+        # Trigger coordinator refresh which will properly update last_update_success_time
+        await self.coordinator.async_request_refresh()
